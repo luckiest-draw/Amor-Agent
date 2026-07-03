@@ -1,0 +1,28 @@
+:root {
+  --amor-bg: #f9fafb;
+  --amor-surface: #ffffff;
+  --amor-border: #e5e7eb;
+  --amor-text: #111827;
+  --amor-text-secondary: #6b7280;
+  --amor-accent: #18181b;
+  --amor-brand: #6366f1;
+  --amor-success: #10b981;
+  --amor-warning: #f59e0b;
+  --amor-danger: #ef4444;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  background: var(--amor-bg);
+  color: var(--amor-text);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100vh;
+}
+
+#app {
+  display: flex;
+  height: 100vh;
+}

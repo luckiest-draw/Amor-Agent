@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+  name = "amor"                     # 包名，别人 import amor 就用这个
+  version = "0.1.0"                 # 版本号
+  requires-python = ">=3.11"        # 低于 3.11 装不上
+  dependencies = [                  # pip install 时自动装的依赖
+      "pydantic>=2.0",
+  ]
+
+[tool.pytest.ini_options]
+  asyncio_mode = "auto"             #自动识别 async def 测试函数，不用手动加 @pytest.mark.asyncio
+  testpaths = ["tests"]             #pytest 默认去 tests 目录找测试

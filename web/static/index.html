@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amor Agent</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --text-muted: #78716c;
+    --accent: #0f172a;
+    --accent-light: #334155;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --green: #10b981;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,.05), 0 2px 4px -2px rgba(0,0,0,.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.06), 0 4px 6px -4px rgba(0,0,0,.05);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Sidebar ─────────────────────────────────── */
+  #sidebar {
+    width: 280px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  #sidebar .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+    color: var(--accent);
+  }
+
+  #sidebar .logo .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .5; transform: scale(1.3); }
+  }
+
+  .sidebar-section h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  #sidebar select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5l5 5 5-5' stroke='%2378716c' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    cursor: pointer;
+    transition: border-color .2s;
+  }
+  #sidebar select:focus { outline: none; border-color: var(--accent); }
+
+  .skill-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .skill-tag {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--blue-light);
+    color: var(--blue);
+    font-weight: 500;
+  }
+
+  #token-card {
+    margin-top: auto;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    border: 1px solid var(--border);
+  }
+  #token-card .stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 3px 0;
+  }
+  #token-card .stat-row .val { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ── Main ────────────────────────────────────── */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scroll-behavior: smooth;
+  }
+
+  /* ── Message bubbles ─────────────────────────── */
+  .msg {
+    max-width: 72%;
+    animation: msg-in .3s ease-out;
+  }
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user {
+    align-self: flex-end;
+    background: var(--accent);
+    color: #fff;
+    padding: 14px 18px;
+    border-radius: 18px 18px 4px 18px;
+    box-shadow: var(--shadow);
+  }
+
+  .msg.agent {
+    align-self: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    border-radius: 18px 18px 18px 4px;
+    box-shadow: var(--shadow);
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .msg.agent.typing {
+    background: var(--blue-light);
+    border-color: transparent;
+    color: var(--text-muted);
+    font-style: italic;
+    animation: typing-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes typing-pulse {
+    0%, 100% { opacity: .6; }
+    50% { opacity: 1; }
+  }
+
+  .msg.status {
+    align-self: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .msg.status .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--amber);
+    animation: pulse-dot 1.5s ease-in-out infinite;
+  }
+
+  /* ── Interrupt card ──────────────────────────── */
+  .msg.interrupt {
+    align-self: center;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    max-width: 500px;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+  }
+  .msg.interrupt .int-header {
+    font-weight: 700;
+    font-size: 14px;
+    color: #92400e;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .msg.interrupt .int-body { font-size: 13px; color: #78350f; margin-bottom: 12px; }
+  .msg.interrupt .int-body code {
+    background: #fef3c7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .msg.interrupt .int-actions { display: flex; gap: 8px; }
+  .msg.interrupt .int-actions button {
+    padding: 8px 18px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all .15s;
+  }
+  .msg.interrupt .int-actions .btn-allow { background: var(--accent); color: #fff; }
+  .msg.interrupt .int-actions .btn-deny { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+  .msg.interrupt .int-actions button:hover { transform: translateY(-1px); }
+
+  /* ── Input ───────────────────────────────────── */
+  #input-area {
+    padding: 16px 48px 24px;
+    display: flex;
+    gap: 10px;
+  }
+  #input-area .input-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    padding: 4px 4px 4px 20px;
+    box-shadow: var(--shadow);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  #input-area .input-wrap:focus-within {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-md), 0 0 0 3px rgba(15,23,42,.06);
+  }
+  #input-area input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 15px;
+    padding: 12px 0;
+    outline: none;
+    font-family: inherit;
+  }
+  #input-area input::placeholder { color: var(--text-muted); }
+  #send-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  #send-btn:hover { background: var(--accent-light); transform: scale(1.05); }
+  #send-btn:active { transform: scale(.95); }
+  #send-btn svg { width: 18px; height: 18px; }
+
+  /* ── Empty state ─────────────────────────────── */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 48px;
+  }
+  .empty-state .emoji { font-size: 48px; animation: float 3s ease-in-out infinite; }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .empty-state h3 { font-size: 18px; color: var(--text); font-weight: 600; }
+  .empty-state p { font-size: 14px; max-width: 400px; }
+
+  /* ── Scrollbar ───────────────────────────────── */
+  #messages::-webkit-scrollbar { width: 5px; }
+  #messages::-webkit-scrollbar-track { background: transparent; }
+  #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+  /* ── Responsive ──────────────────────────────── */
+  @media (max-width: 768px) {
+    #sidebar { display: none; }
+    #messages { padding: 16px 20px; }
+    #input-area { padding: 12px 20px 16px; }
+    .msg { max-width: 90%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside id="sidebar">
+  <div class="logo">
+    <div class="dot"></div>
+    Amor
+  </div>
+
+  <div class="sidebar-section">
+    <h4>模型</h4>
+    <select id="model-select" onchange="changeModel()">
+      <option value="gpt-4o">GPT-4o</option>
+      <option value="gpt-4o-mini">GPT-4o Mini</option>
+      <option value="gemini/gemini-2.0-flash">Gemini 2.0 Flash</option>
+      <option value="deepseek/deepseek-chat">DeepSeek Chat</option>
+      <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+    </select>
+  </div>
+
+  <div class="sidebar-section">
+    <h4>Agent 角色</h4>
+    <div class="skill-tags" id="agent-tags">
+      <span class="skill-tag">researcher</span>
+      <span class="skill-tag">executor</span>
+      <span class="skill-tag">reviewer</span>
+      <span class="skill-tag">designer</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <h4>Skill</h4>
+    <div class="skill-tags" id="skill-tags">加载中...</div>
+  </div>
+
+  <div id="token-card">
+    <div class="stat-row"><span>Token</span><span class="val" id="stat-tokens">0</span></div>
+    <div class="stat-row"><span>模式</span><span class="val" id="stat-mode">—</span></div>
+    <div class="stat-row" style="margin-top:4px; padding-top:4px; border-top:1px solid var(--border);">
+      <span>会话费用</span><span class="val" id="stat-cost">$0.00</span>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div id="main">
+  <div id="messages">
+    <div class="empty-state" id="empty-state">
+      <div class="emoji">✦</div>
+      <h3>Amor Agent</h3>
+      <p>输入任何任务 — 研究、写作、编程、配图。<br>Agent 会自动决定单兵作战还是多角色协作。</p>
+    </div>
+  </div>
+
+  <div id="input-area">
+    <div class="input-wrap">
+      <input id="task-input" placeholder="描述你的任务..." onkeydown="if(event.key==='Enter')send()">
+      <button id="send-btn" onclick="send()" title="发送">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let ws;
+let totalTokens = 0;
+let currentRequestId = null;
+
+// ── Init ─────────────────────────────────────────
+async function init() {
+  try {
+    const ms = await fetch(API+'/api/models').then(r=>r.json());
+    const sel = document.getElementById('model-select');
+    sel.innerHTML = ms.models.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+    sel.value = ms.current;
+
+    const ss = await fetch(API+'/api/skills').then(r=>r.json());
+    const tags = document.getElementById('skill-tags');
+    tags.innerHTML = ss.skills.length
+      ? ss.skills.map(s => `<span class="skill-tag">${s.name}</span>`).join('')
+      : '<span style="font-size:12px;color:#999;">无</span>';
+
+    const ag = await fetch(API+'/api/agents').then(r=>r.json());
+    if (ag.agents.length) {
+      document.getElementById('agent-tags').innerHTML = ag.agents.map(a => `<span class="skill-tag">${a.id}</span>`).join('');
+    }
+  } catch(e) { console.warn('API not available:', e); }
+
+  connectWS();
+}
+init();
+
+// ── WebSocket ─────────────────────────────────────
+function connectWS() {
+  ws = new WebSocket(`ws://${location.host}/ws/1`);
+  ws.onmessage = e => {
+    const d = JSON.parse(e.data);
+    if (d.type === 'node_start') addStatus(`Agent 正在思考...`);
+    else if (d.type === 'node_end') addStatus('步骤完成');
+    else if (d.type === 'error') addStatus(`⚠️ ${d.error || '执行出错'}`);
+    else if (d.type === 'interrupt') showInterrupt(d, e.data);
+  };
+  ws.onclose = () => setTimeout(connectWS, 2000);
+}
+
+// ── Send ──────────────────────────────────────────
+async function send() {
+  const inp = document.getElementById('task-input');
+  const msg = inp.value.trim();
+  if (!msg) return;
+
+  removeEmptyState();
+  addMsg('user', msg);
+  inp.value = '';
+  const typingMsg = addMsg('agent', '思考中...', true);
+
+  try {
+    const r = await fetch(API+'/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, model: document.getElementById('model-select').value }),
+    }).then(r => r.json());
+
+    typingMsg.remove();
+    addMsg('agent', r.content || '(无输出)');
+    totalTokens += r.tokens || 0;
+    updateStats(r.tokens || 0, r.mode || 'single');
+  } catch(e) {
+    typingMsg.remove();
+    addMsg('agent', `请求失败: ${e.message}`);
+  }
+}
+
+// ── UI helpers ────────────────────────────────────
+function addMsg(role, text, isTyping=false) {
+  const d = document.createElement('div');
+  d.className = `msg ${role}`;
+  if (isTyping) d.classList.add('typing');
+  d.textContent = text;
+  document.getElementById('messages').appendChild(d);
+  d.scrollIntoView({ behavior: 'smooth' });
+  return d;
+}
+
+function addStatus(text) {
+  const d = document.createElement('div');
+  d.className = 'msg status';
+  d.innerHTML = `<span class="status-dot"></span>${text}`;
+  document.getElementById('messages').appendChild(d);
+  d.scrollIntoView({ behavior: 'smooth' });
+  // 3秒后自动淡出
+  setTimeout(() => { d.style.opacity = '0'; d.style.transition = 'opacity .5s'; }, 3000);
+}
+
+function removeEmptyState() {
+  const el = document.getElementById('empty-state');
+  if (el) el.remove();
+}
+
+function updateStats(tokens, mode) {
+  document.getElementById('stat-tokens').textContent = totalTokens;
+  document.getElementById('stat-mode').textContent = mode === 'single' ? '单 Agent' : '多 Agent';
+  document.getElementById('stat-cost').textContent = '$' + (totalTokens * 0.00001).toFixed(4);
+}
+
+function changeModel() {
+  const v = document.getElementById('model-select').value;
+  fetch(API+'/api/models/active?model_id='+encodeURIComponent(v), { method: 'PUT' }).catch(()=>{});
+}
+
+// ── Interrupt (高危操作审批) ─────────────────────
+function showInterrupt(data) {
+  removeEmptyState();
+  const d = document.createElement('div');
+  d.className = 'msg interrupt';
+  d.id = 'int-' + (data.node_id || Date.now());
+  d.innerHTML = `
+    <div class="int-header">⚠️ 危险操作需要审批</div>
+    <div class="int-body">
+      工具: <code>${data.tool_name || 'unknown'}</code><br>
+      风险等级: <strong>${data.risk_level || 'high'}</strong><br>
+      参数: <code>${JSON.stringify(data.tool_arguments || {}).slice(0,200)}</code>
+    </div>
+    <div class="int-actions">
+      <button class="btn-allow" onclick="approveInterrupt('${data.node_id}',true,this)">允许</button>
+      <button class="btn-deny" onclick="approveInterrupt('${data.node_id}',false,this)">拒绝</button>
+    </div>`;
+  document.getElementById('messages').appendChild(d);
+  d.scrollIntoView({ behavior: 'smooth' });
+}
+
+async function approveInterrupt(requestId, approved, btn) {
+  const card = btn.closest('.msg.interrupt');
+  card.innerHTML = approved
+    ? '<div style="color:var(--green);font-weight:600;">✅ 已允许 — 继续执行</div>'
+    : '<div style="color:var(--red);font-weight:600;">❌ 已拒绝 — Agent 将尝试其他方案</div>';
+  // 通知后端
+  try {
+    await fetch(API+'/api/chat/interrupt', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ request_id: requestId, approved: approved }),
+    });
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
