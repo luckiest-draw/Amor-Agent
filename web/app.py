@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from web.routes import chat, agent, model, skill
+from web.routes import chat, agent, model, skill, knowledge
 from web.ws import websocket_endpoint
 
 app = FastAPI(title="Amor Agent", version="0.1.0")
@@ -20,6 +20,7 @@ app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(agent.router, prefix="/api", tags=["agent"])
 app.include_router(model.router, prefix="/api", tags=["model"])
 app.include_router(skill.router, prefix="/api", tags=["skill"])
+app.include_router(knowledge.router, prefix="/api", tags=["knowledge"])
 
 # WebSocket
 app.websocket("/ws/{conversation_id}")(websocket_endpoint)

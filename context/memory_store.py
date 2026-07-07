@@ -2,7 +2,6 @@
 
 from typing import Any
 
-from celery.bin.result import result
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from amor.protocols.memory import MemoryProtocol

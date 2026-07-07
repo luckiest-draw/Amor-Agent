@@ -1,55 +1,67 @@
 """RAG 检索 — ChromaDB 向量存储 + 检索.
 
-切分策略: 表格 → 整块保护（不切），文本 → LangChain TextSplitter 智能切
+切分: HanLP 中文语义切分 + 表格整块保护
+向量: BGE 模型（本地推理，中文检索专训）
 """
 
 import re
 import chromadb
 from chromadb.utils import embedding_functions
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pathlib import Path
 from context.reader import read_file
 
-# OpenAI embeddings（与 LiteLLM 共用 API Key）
-_default_ef = embedding_functions.OpenAIEmbeddingFunction(
-    api_key=None,
-    model_name="text-embedding-3-small",
+# BGE 中文向量模型（本地跑，不花钱）
+_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
+    model_name="BAAI/bge-large-zh-v1.5",
+    device="cpu",
 )
 
 _client = chromadb.PersistentClient(path="./chroma_data")
 _collection = _client.get_or_create_collection(
     name="documents",
-    embedding_function=_default_ef,
+    embedding_function=_ef,
 )
 
-# LangChain 的 RecursiveCharacterTextSplitter
-# 优先在段落/换行处切，不行再降级到句号，最后才硬切
-_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500,
-    chunk_overlap=50,
-    separators=["\n\n", "\n", "。", ".", "？", "?", "！", "!", "；", ";", " ", ""],
-)
+
+def _hanlp_split(text: str) -> list[str]:
+    """HanLP 语义切分，中文 NLP 模型判断句子边界。"""
+    import hanlp
+    tokenizer = hanlp.load(hanlp.pretrained.tok.COARSE_ELECTRA_SMALL_ZH)
+    sentences: list[str] = tokenizer(text)
+    # 按 500 字合块，50 字重叠
+    chunks = []
+    current = ""
+    for s in sentences:
+        if len(current) + len(s) <= 500:
+            current += s
+        else:
+            if current:
+                chunks.append(current)
+            current = current[-50:] + s if len(current) > 50 else s
+    if current:
+        chunks.append(current)
+    return chunks
 
 
 async def add_document(path: str | Path) -> None:
-    """解析文件 → 表格保护 → 只切文本 → embedding → 存入 ChromaDB."""
+    """解析 → 表格保护 → HanLP 切分 → BGE embedding → ChromaDB."""
     text = await read_file(path)
     filename = str(Path(path).name)
 
-    # 1. 把 HTML 表格完整保护起来，不切
+    # 1. 保护 HTML 表格
     tables: list[str] = []
     table_pattern = re.compile(r"<table>[\s\S]*?</table>", re.IGNORECASE)
 
-    def _protect_table(match):
+    def _protect(match):
         tables.append(match.group())
         return f"{{TABLE_{len(tables) - 1}}}"
 
-    protected_text = table_pattern.sub(_protect_table, text)
+    protected_text = table_pattern.sub(_protect, text)
 
-    # 2. 只切非表格的文本
-    chunks = _splitter.split_text(protected_text)
+    # 2. HanLP 语义切分
+    chunks = _hanlp_split(protected_text)
 
-    # 3. 把表格还原回去
+    # 3. 还原表格
     for i, table_html in enumerate(tables):
         chunks = [c.replace(f"{{TABLE_{i}}}", table_html) for c in chunks]
 
@@ -65,12 +77,10 @@ async def add_document(path: str | Path) -> None:
 
 
 async def query(query_text: str, top_k: int = 5) -> list[dict]:
-    """检索与查询最相关的文档片段."""
+    """BGE 向量检索最相关文档片段."""
     results = _collection.query(query_texts=[query_text], n_results=top_k)
-
     documents = results.get("documents", [[]])[0]
     metadatas = results.get("metadatas", [[]])[0]
-
     return [
         {"text": doc, "source": meta.get("source", "unknown")}
         for doc, meta in zip(documents, metadatas)

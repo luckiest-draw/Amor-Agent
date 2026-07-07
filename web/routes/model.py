@@ -5,14 +5,15 @@ from fastapi import APIRouter
 router = APIRouter()
 
 AVAILABLE_MODELS = [
-    {"id": "deepseek/deepseek-chat", "name": "DeepSeek V4 Pro", "provider": "DeepSeek"},
+    {"id": "deepseek/deepseek-v4-pro", "name": "DeepSeek V4 Pro", "provider": "DeepSeek"},
+    {"id": "deepseek/deepseek-v4-flash", "name": "DeepSeek V4 Flash", "provider": "DeepSeek"},
     {"id": "gpt-4o", "name": "GPT-4o", "provider": "OpenAI"},
     {"id": "gpt-4o-mini", "name": "GPT-4o Mini", "provider": "OpenAI"},
     {"id": "gemini/gemini-2.0-flash", "name": "Gemini 2.0 Flash", "provider": "Google"},
     {"id": "claude-sonnet-4-6", "name": "Claude Sonnet 4.6", "provider": "Anthropic"},
 ]
 
-_current_model = "deepseek/deepseek-chat"
+_current_model = "deepseek/deepseek-v4-pro"
 
 
 @router.get("/models")
